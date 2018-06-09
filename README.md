@@ -22,7 +22,30 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+require 'backoff'
+require 'logger'
+logger = Logger.new($stderr)
+class Foo
+  class MyError < StandardError; end
+  class MyErrorTwo < StandardError; end
+  def bar
+    raise MyError if rand < 0.3
+    raise MyErrorTwo if rand < 0.1
+    true
+  end
+end
+# The second argument may be a exception class or a list of exception classes
+foo_with_backoff = Backoff.wrap(Foo.new, [Foo::MyError, Foo::MyErrorTwo], logger, initial_backoff: 1, multiplier: 2)
+p foo_with_backoff.bar
+# E, [2018-06-09T14:37:53.943201 #23986] ERROR -- : Got Foo::MyErrorTwo, sleeping 1
+# I, [2018-06-09T14:37:54.943928 #23986]  INFO -- : Woke up after Foo::MyErrorTwo retrying again
+# E, [2018-06-09T14:37:54.944066 #23986] ERROR -- : Got Foo::MyError, sleeping 2
+# I, [2018-06-09T14:37:56.944181 #23986]  INFO -- : Woke up after Foo::MyError retrying again
+# E, [2018-06-09T14:37:56.944346 #23986] ERROR -- : Got Foo::MyError, sleeping 4
+# I, [2018-06-09T14:38:00.947363 #23986]  INFO -- : Woke up after Foo::MyError retrying again
+# => true
+```
 
 ## Development
 
