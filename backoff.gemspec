@@ -4,11 +4,11 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "backoff"
-  spec.version       = "0.1.0"
+  spec.version       = "0.1.1"
   spec.authors       = ["Fonsan"]
   spec.email         = ["fonsan@gmail.com"]
 
-  spec.summary       = %q{Implements exponetial backoff when matching exception is caught}
+  spec.summary       = %q{Implements exponential backoff when matching exception is caught}
   spec.homepage      = "https://github.com/fonsan/backoff"
   spec.license       = "MIT"
 
