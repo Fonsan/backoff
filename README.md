@@ -1,8 +1,6 @@
 # Backoff
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/backoff`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Add exponential full jitter backoff to any object by proxy
 
 ## Installation
 
@@ -29,21 +27,27 @@ logger = Logger.new($stderr)
 class Foo
   class MyError < StandardError; end
   class MyErrorTwo < StandardError; end
+
+  def initialize
+    @i = 0
+  end
+
   def bar
-    raise MyError if rand < 0.3
-    raise MyErrorTwo if rand < 0.1
+    @i += 1
+    raise MyError if @i < 2
+    raise MyErrorTwo if @i < 4
     true
   end
 end
 # The second argument may be a exception class or a list of exception classes
 foo_with_backoff = Backoff.wrap(Foo.new, [Foo::MyError, Foo::MyErrorTwo], logger, initial_backoff: 1, multiplier: 2)
 p foo_with_backoff.bar
-# E, [2018-06-09T14:37:53.943201 #23986] ERROR -- : Got Foo::MyErrorTwo, sleeping 1
-# I, [2018-06-09T14:37:54.943928 #23986]  INFO -- : Woke up after Foo::MyErrorTwo retrying again
-# E, [2018-06-09T14:37:54.944066 #23986] ERROR -- : Got Foo::MyError, sleeping 2
-# I, [2018-06-09T14:37:56.944181 #23986]  INFO -- : Woke up after Foo::MyError retrying again
-# E, [2018-06-09T14:37:56.944346 #23986] ERROR -- : Got Foo::MyError, sleeping 4
-# I, [2018-06-09T14:38:00.947363 #23986]  INFO -- : Woke up after Foo::MyError retrying again
+# E, [2018-11-08T10:17:16.199572 #33699] ERROR -- : Got Foo::MyError, sleeping 0.5672605987514756
+# I, [2018-11-08T10:17:17.204727 #33699]  INFO -- : Woke up after Foo::MyError retrying again
+# E, [2018-11-08T10:17:17.204903 #33699] ERROR -- : Got Foo::MyErrorTwo, sleeping 1.6799593245880358
+# I, [2018-11-08T10:17:19.205967 #33699]  INFO -- : Woke up after Foo::MyErrorTwo retrying again
+# E, [2018-11-08T10:17:19.206074 #33699] ERROR -- : Got Foo::MyErrorTwo, sleeping 3.732148747396218
+# I, [2018-11-08T10:17:23.206237 #33699]  INFO -- : Woke up after Foo::MyErrorTwo retrying again
 # => true
 ```
 

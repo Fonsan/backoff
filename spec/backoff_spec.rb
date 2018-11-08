@@ -1,10 +1,23 @@
 RSpec.describe Backoff do
   let(:object) { double(:object) }
+  let(:initial_backoff) { nil }
+  let(:multiplier) { nil }
   let(:logger) { spy(:logger) }
   let(:sleeper) { spy(:sleeper) }
+  let(:random) { Random.new(1234) }
   class FakeError < StandardError; end
   let(:exception_classes) { [StandardError, FakeError] }
-  subject { Backoff.wrap(object, exception_classes, logger, sleeper: sleeper) }
+  subject do
+    Backoff.wrap(
+      object,
+      exception_classes,
+      logger,
+      sleeper: sleeper,
+      random: random,
+      initial_backoff: initial_backoff,
+      multiplier: multiplier,
+    )
+  end
 
   it 'retries if StandardError' do
     times = 0
@@ -15,8 +28,42 @@ RSpec.describe Backoff do
       end
     end
     subject.foo
-    expect(logger).to have_received(:error).with("Got StandardError, sleeping 1").once
-    expect(logger).to have_received(:error).with("Got StandardError, sleeping 2").once
+    expect(logger).to have_received(:error).with("Got StandardError, sleeping 0.19151945027934003").once
+    expect(logger).to have_received(:error).with("Got StandardError, sleeping 1.244217533067725").once
+  end
+
+  context 'with higher initial backoff' do
+    let(:initial_backoff) { 2 }
+
+    it 'retries if StandardError' do
+      times = 0
+      allow(object).to receive(:foo) do |args|
+        times += 1
+        if times < 3
+          raise StandardError
+        end
+      end
+      subject.foo
+      expect(logger).to have_received(:error).with("Got StandardError, sleeping 0.38303890055868006").once
+      expect(logger).to have_received(:error).with("Got StandardError, sleeping 2.48843506613545").once
+    end
+  end
+
+  context 'with higher multiplier' do
+    let(:multiplier) { 3 }
+
+    it 'retries if StandardError' do
+      times = 0
+      allow(object).to receive(:foo) do |args|
+        times += 1
+        if times < 3
+          raise StandardError
+        end
+      end
+      subject.foo
+      expect(logger).to have_received(:error).with("Got StandardError, sleeping 0.19151945027934003").once
+      expect(logger).to have_received(:error).with("Got StandardError, sleeping 1.8663262996015875").once
+    end
   end
 
   it 'calls with correct parameters' do

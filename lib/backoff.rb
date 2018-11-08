@@ -12,6 +12,8 @@ class Backoff < Delegator
     @sleeper = options[:sleeper] || Kernel.method(:sleep)
     @initial_backoff = options[:initial_backoff] || 1
     @multiplier = options[:multiplier] || 2
+    @random = options[:random] || Random.new
+    @jitter = options[:jitter] || lambda {|delay| @random.rand(0..delay.to_f) }
   end
 
   def __getobj__
@@ -25,7 +27,8 @@ class Backoff < Delegator
   def _with_backoff(backoff = @initial_backoff)
     yield
   rescue *@exception_classes => e
-    @logger.error "Got #{e.class}, sleeping #{backoff}"
+    jittered_backoff = @jitter.call(backoff)
+    @logger.error "Got #{e.class}, sleeping #{jittered_backoff}"
     @sleeper.call(backoff)
     @logger.info "Woke up after #{e.class} retrying again"
     backoff *= @multiplier
